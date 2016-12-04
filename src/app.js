@@ -57,9 +57,15 @@ var GameLayer = cc.Layer.extend({
         // pelota y objetivo
         this.space.addCollisionHandler(tipoObjetivo, tipoBola,
                                  null, null, this.collisionBolaConObjetivo.bind(this), null);
+        // pelota y bloque
+        this.space.addCollisionHandler(tipoBloque, tipoBola,
+                                 null, null, this.collisionBolaConBloque.bind(this), null);
         // muro y objetivo
         this.space.addCollisionHandler(tipoMuro, tipoObjetivo,
                                  null, null, this.collisionObjetivoConMuro.bind(this), null);
+        // bloque y objetivo
+        this.space.addCollisionHandler(tipoObjetivo, tipoBloque,
+                                 null, null, this.collisionBloqueConObjetivo.bind(this), null);
 
 
 
@@ -243,10 +249,21 @@ var GameLayer = cc.Layer.extend({
              var shapes = arbiter.getShapes();
              if(this.spritePelota.body.vx>100)
                 this.formasEliminar.push(shapes[0]);
+        },collisionBolaConBloque:function (arbiter, space) {
+             var shapes = arbiter.getShapes();
+              if(this.spritePelota.body.vx>250)
+                 this.formasEliminar.push(shapes[0]);
         },collisionObjetivoConMuro:function (arbiter, space) {
               var shapes = arbiter.getShapes();
               this.formasEliminar.push(shapes[1]);
-         }
+        },collisionBloqueConObjetivo:function (arbiter, space) {
+               var shapes = arbiter.getShapes();
+               var body = arbiter.body_b;
+               if(body.vx > 100 || body.vy<-50){
+                this.formasEliminar.push(shapes[1]);
+                this.formasEliminar.push(shapes[0]);
+               }
+        }
 
 
 

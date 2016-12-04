@@ -1,6 +1,7 @@
 var tipoMuro = 2;
 var tipoBloque = 3;
-
+var tipoObjetivo = 4;
+var tipoBola = 5;
 
 var GameLayer = cc.Layer.extend({
     mundoActivo: false,
@@ -10,6 +11,8 @@ var GameLayer = cc.Layer.extend({
     formasEliminar: [],
     spriteFondo: null,
     tiempo:0,
+    intentos:3,
+    arrayObjetivo:[],
     ctor:function () {
         this._super();
         var size = cc.winSize;
@@ -51,6 +54,12 @@ var GameLayer = cc.Layer.extend({
         // muro y bloque
         this.space.addCollisionHandler(tipoMuro, tipoBloque,
                          null, null, this.collisionBloqueConMuro.bind(this), null);
+        // pelota y objetivo
+        this.space.addCollisionHandler(tipoObjetivo, tipoBola,
+                                 null, null, this.collisionBolaConObjetivo.bind(this), null);
+        // muro y objetivo
+        this.space.addCollisionHandler(tipoMuro, tipoObjetivo,
+                                 null, null, this.collisionObjetivoConMuro.bind(this), null);
 
 
 
@@ -64,6 +73,7 @@ var GameLayer = cc.Layer.extend({
         cc.spriteFrameCache.addSpriteFrames(res.animacion_bola_plist);
         cc.spriteFrameCache.addSpriteFrames(res.barra_3_plist);
         cc.spriteFrameCache.addSpriteFrames(res.animacioncocodrilo_plist);
+        cc.spriteFrameCache.addSpriteFrames(res.animacionpanda_plist);
 
         // Sprite pelota
         this.spritePelota = new cc.PhysicsSprite("#animacion_bola1.png");
@@ -77,6 +87,7 @@ var GameLayer = cc.Layer.extend({
         this.space.addBody(body);
 
         var shape = new cp.CircleShape(body, this.spritePelota.width/2, cp.vzero);
+        shape.setCollisionType(tipoBola);
         this.space.addShape(shape);
         this.addChild(this.spritePelota);
 
@@ -99,13 +110,15 @@ var GameLayer = cc.Layer.extend({
               if(instancia.tiempo == 0 ){
                  instancia.mundoActivo = true;
                  instancia.tiempo = new Date().getTime();
-                 // PRUEBA 1.
-                 //instancia.spritePelota.body.applyImpulse(cp.v(0, 300),
-                 // cp.v(0, 0));
 
-                 // PRUEBA 2:
                   var body = instancia.spritePelota.body;
                   body.applyImpulse(cp.v( event.getLocationX() - body.p.x, event.getLocationY() - body.p.y), cp.v(0,0));
+                  instancia.intentos--;
+              }
+              else if(instancia.tiempo > 0 && instancia.intentos>0){
+                instancia.mundoActivo = false;
+                instancia.spritePelota.setPosition(cc.p(cc.winSize.width*0.1 , cc.winSize.height*0.5));
+                instancia.tiempo = 0;
               }
 
      },update:function (dt) {
@@ -129,10 +142,23 @@ var GameLayer = cc.Layer.extend({
                       this.arrayBloques.splice(i, 1);
                   }
                 }
+                for (var i = 0; i < this.arrayObjetivo.length; i++) {
+                  if (this.arrayObjetivo[i].body.shapeList[0] == shape) {
+                      // quita la forma
+                      this.space.removeShape(shape);
+                      // quita el cuerpo *opcional, funciona igual
+                      this.space.removeBody(shape.getBody());
+                      // quita el sprite
+                      this.arrayObjetivo[i].removeFromParent();
+                      // Borrar tambien de ArrayBloques
+                      this.arrayObjetivo.splice(i, 1);
+                  }
+
+                }
             }
             this.formasEliminar = [];
 
-        if( this.arrayBloques.length > 0){
+        if( this.arrayObjetivo.length > 0){
 
             var todosSinMoverse = true;
             for(var i = 0; i < this.arrayBloques.length; i++) {
@@ -151,7 +177,7 @@ var GameLayer = cc.Layer.extend({
         } else { //  arrayBloques.length == 0
             cc.director.pause();
             cc.audioEngine.stopMusic();
-            this.getParent().addChild(new GameOverLayer());
+            this.getParent().addChild(new GameWinLayer());
         }
 
 
@@ -176,8 +202,11 @@ var GameLayer = cc.Layer.extend({
                     var altoTorre = 0;
 
                     while(altoTorre < 4){
-
+                        var modelo = Math.floor((Math.random() * 2) + 1);
+                        if(modelo==1)
                          var spriteBloque = new cc.PhysicsSprite("#cocodrilo1.png");
+                        if(modelo==2)
+                         var spriteBloque = new cc.PhysicsSprite("#panda1.png");
 
                          // Masa 1
                          var body = new cp.Body(1, cp.momentForBox(1, spriteBloque.width, spriteBloque.height));
@@ -190,22 +219,34 @@ var GameLayer = cc.Layer.extend({
 
                          var shape = new cp.BoxShape(body, spriteBloque.width, spriteBloque.height);
                          shape.setFriction(1);
-                         shape.setCollisionType(tipoBloque);
+                         if(modelo==1)
+                            shape.setCollisionType(tipoBloque);
+                         if(modelo==2)
+                            shape.setCollisionType(tipoObjetivo);
                          this.space.addShape(shape);
                          this.addChild(spriteBloque);
 
                          // agregar el Sprite al array Bloques
-                         this.arrayBloques.push(spriteBloque);
+                         if(modelo==1)
+                            this.arrayBloques.push(spriteBloque);
+                         if(modelo==2)
+                            this.arrayObjetivo.push(spriteBloque);
 
                          altoTorre++;
 
                    }
 
         },collisionBloqueConMuro:function (arbiter, space) {
-                    var shapes = arbiter.getShapes();
-                    // shapes[0] es el muro
-                    this.formasEliminar.push(shapes[1]);
-          }
+            var shapes = arbiter.getShapes();
+            this.formasEliminar.push(shapes[1]);
+        },collisionBolaConObjetivo:function (arbiter, space) {
+             var shapes = arbiter.getShapes();
+             if(this.spritePelota.body.vx>100)
+                this.formasEliminar.push(shapes[0]);
+        },collisionObjetivoConMuro:function (arbiter, space) {
+              var shapes = arbiter.getShapes();
+              this.formasEliminar.push(shapes[1]);
+         }
 
 
 

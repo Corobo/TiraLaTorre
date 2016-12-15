@@ -58,8 +58,8 @@ var GameLayer = cc.Layer.extend({
         this.space.addCollisionHandler(tipoObjetivo, tipoBola,
                                  null, null, this.collisionBolaConObjetivo.bind(this), null);
         // pelota y bloque
-        this.space.addCollisionHandler(tipoBloque, tipoBola,
-                                 null, null, this.collisionBolaConBloque.bind(this), null);
+        //this.space.addCollisionHandler(tipoBloque, tipoBola,
+          //                       null, null, this.collisionBolaConBloque.bind(this), null);
         // muro y objetivo
         this.space.addCollisionHandler(tipoMuro, tipoObjetivo,
                                  null, null, this.collisionObjetivoConMuro.bind(this), null);
@@ -208,16 +208,13 @@ var GameLayer = cc.Layer.extend({
                     var altoTorre = 0;
 
                     while(altoTorre < 4){
-                        var modelo = Math.floor((Math.random() * 2) + 1);
-                        if(modelo==1)
-                         var spriteBloque = new cc.PhysicsSprite("#cocodrilo1.png");
-                        if(modelo==2)
+
                          var spriteBloque = new cc.PhysicsSprite("#panda1.png");
 
                          // Masa 1
                          var body = new cp.Body(1, cp.momentForBox(1, spriteBloque.width, spriteBloque.height));
 
-                         body.p = cc.p(cc.winSize.width*0.7 , cc.winSize.height*0.4 + 10 + 20 + spriteBloque.height*altoTorre);
+                         body.p = cc.p(cc.winSize.width*0.73 , cc.winSize.height*0.4 + 10 + 20 + spriteBloque.height*altoTorre);
 
                          spriteBloque.setBody(body);
                          // Este si hay que añadirlo
@@ -225,20 +222,38 @@ var GameLayer = cc.Layer.extend({
 
                          var shape = new cp.BoxShape(body, spriteBloque.width, spriteBloque.height);
                          shape.setFriction(1);
-                         if(modelo==1)
-                            shape.setCollisionType(tipoBloque);
-                         if(modelo==2)
-                            shape.setCollisionType(tipoObjetivo);
+                         shape.setCollisionType(tipoObjetivo);
                          this.space.addShape(shape);
                          this.addChild(spriteBloque);
 
                          // agregar el Sprite al array Bloques
-                         if(modelo==1)
-                            this.arrayBloques.push(spriteBloque);
-                         if(modelo==2)
-                            this.arrayObjetivo.push(spriteBloque);
+                         this.arrayObjetivo.push(spriteBloque);
 
                          altoTorre++;
+
+                   }
+                   altoTorre=0;
+                   while(altoTorre<2){
+                      var spriteBloque = new cc.PhysicsSprite("#cocodrilo1.png");
+
+                      var body = new cp.Body(1, cp.momentForBox(1, spriteBloque.width, spriteBloque.height));
+
+                       body.p = cc.p(cc.winSize.width*0.67 , cc.winSize.height*0.4 + 10 + 20 + spriteBloque.height*altoTorre);
+
+                       spriteBloque.setBody(body);
+                       // Este si hay que añadirlo
+                       this.space.addBody(body);
+
+                       var shape = new cp.BoxShape(body, spriteBloque.width, spriteBloque.height);
+                       shape.setFriction(1);
+                       shape.setCollisionType(tipoBloque);
+                       this.space.addShape(shape);
+                       this.addChild(spriteBloque);
+
+                       // agregar el Sprite al array Bloques
+                       this.arrayBloques.push(spriteBloque);
+
+                       altoTorre++;
 
                    }
 
@@ -258,9 +273,8 @@ var GameLayer = cc.Layer.extend({
               this.formasEliminar.push(shapes[1]);
         },collisionBloqueConObjetivo:function (arbiter, space) {
                var shapes = arbiter.getShapes();
-               var body = arbiter.body_b;
+               var body = arbiter.body_a;
                if(body.vx > 100 || body.vy<-50){
-                this.formasEliminar.push(shapes[1]);
                 this.formasEliminar.push(shapes[0]);
                }
         }
